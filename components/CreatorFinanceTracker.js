@@ -1,33 +1,59 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, Calendar, Calculator, PlusCircle, Trash2 } from 'lucide-react';
+import { DollarSign, TrendingUp, Calendar, Calculator, PlusCircle, Trash2, CalendarDays } from 'lucide-react';
 
 const CreatorFinanceTracker = () => {
   const [activeTab, setActiveTab] = useState('income');
   const [incomeEntries, setIncomeEntries] = useState([
-    { id: 1, date: '2025-08-15', source: 'TikTok Shop', platform: 'TikTok', description: 'Commission from skincare promo', amount: 450, category: 'Affiliate' },
-    { id: 2, date: '2025-08-20', source: 'Brand Deal', platform: 'Instagram', description: 'Fitness brand partnership', amount: 800, category: 'Sponsorship' }
+    { id: 1, date: '2025-09-15', source: 'TikTok Shop', platform: 'TikTok', description: 'Commission from skincare promo', amount: 450, category: 'Affiliate' },
+    { id: 2, date: '2025-09-20', source: 'Brand Deal', platform: 'Instagram', description: 'Fitness brand partnership', amount: 800, category: 'Sponsorship' },
+    { id: 3, date: '2025-09-05', source: 'Trading', platform: 'Other', description: 'Stock market gains', amount: 230, category: 'Trading' }
   ]);
   const [expenses, setExpenses] = useState([
-    { id: 1, date: '2025-08-10', category: 'Equipment', description: 'Ring light for content', amount: 120, taxDeductible: true },
-    { id: 2, date: '2025-08-12', category: 'Software', description: 'Canva Pro subscription', amount: 15, taxDeductible: true }
+    { id: 1, date: '2025-09-10', category: 'Equipment', description: 'Ring light for content', amount: 120, taxDeductible: true },
+    { id: 2, date: '2025-09-12', category: 'Software', description: 'Canva Pro subscription', amount: 15, taxDeductible: true },
+    { id: 3, date: '2025-09-08', category: 'Marketing', description: 'Instagram ads', amount: 85, taxDeductible: true }
   ]);
   const [brandDeals, setBrandDeals] = useState([
-    { id: 1, brand: 'FitTech Co', campaign: 'Summer Wellness', stage: 'Negotiation', dueDate: '2025-09-15', paymentStatus: 'Pending', amount: 1200, notes: 'Need to submit content draft' },
-    { id: 2, brand: 'StyleBox', campaign: 'Fall Fashion', stage: 'Signed', dueDate: '2025-09-30', paymentStatus: 'Not Due', amount: 800, notes: 'Contract signed, content due Sep 30' }
+    { id: 1, brand: 'FitTech Co', campaign: 'Summer Wellness', stage: 'Negotiation', dueDate: '2025-10-15', paymentStatus: 'Pending', amount: 1200, notes: 'Need to submit content draft' },
+    { id: 2, brand: 'StyleBox', campaign: 'Fall Fashion', stage: 'Signed', dueDate: '2025-10-30', paymentStatus: 'Not Due', amount: 800, notes: 'Contract signed, content due Oct 30' }
   ]);
   const [taxRate, setTaxRate] = useState(25);
-  const [emergencyGoal, setEmergencyGoal] = useState(5000);
+  const [monthlyBufferGoal, setMonthlyBufferGoal] = useState(2000);
+  const [currentDate, setCurrentDate] = useState(new Date(2025, 8, 1));
 
   const [newIncome, setNewIncome] = useState({ date: '', source: '', platform: '', description: '', amount: '', category: 'Affiliate' });
   const [newExpense, setNewExpense] = useState({ date: '', category: 'Equipment', description: '', amount: '', taxDeductible: true });
   const [newBrandDeal, setNewBrandDeal] = useState({ brand: '', campaign: '', stage: 'Outreach', dueDate: '', paymentStatus: 'Pending', amount: '', notes: '' });
 
+  // Calculate current month data
+  const getCurrentMonthData = () => {
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    
+    const monthlyIncome = incomeEntries.filter(entry => {
+      const entryDate = new Date(entry.date);
+      return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
+    }).reduce((sum, entry) => sum + entry.amount, 0);
+    
+    const monthlyExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+    }).reduce((sum, expense) => sum + expense.amount, 0);
+    
+    return { monthlyIncome, monthlyExpenses };
+  };
+
+  const { monthlyIncome, monthlyExpenses } = getCurrentMonthData();
   const totalIncome = incomeEntries.reduce((sum, entry) => sum + entry.amount, 0);
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
   const deductibleExpenses = expenses.filter(e => e.taxDeductible).reduce((sum, expense) => sum + expense.amount, 0);
   const netProfit = totalIncome - totalExpenses;
+  const monthlyNetProfit = monthlyIncome - monthlyExpenses;
   const estimatedTax = (netProfit * taxRate) / 100;
-  const emergencyFundProgress = (netProfit / emergencyGoal) * 100;
+  
+  // Monthly buffer progress
+  const bufferProgress = (monthlyNetProfit / monthlyBufferGoal) * 100;
+  const bufferSurplus = monthlyNetProfit > monthlyBufferGoal ? monthlyNetProfit - monthlyBufferGoal : 0;
 
   const addIncome = () => {
     if (newIncome.date && newIncome.source && newIncome.amount) {
@@ -80,11 +106,112 @@ const CreatorFinanceTracker = () => {
     ));
   };
 
+  // Calendar functions
+  const getDaysInMonth = (date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+  const getDateEntries = (day) => {
+    const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dayIncome = incomeEntries.filter(entry => entry.date === dateStr);
+    const dayExpenses = expenses.filter(expense => expense.date === dateStr);
+    return { dayIncome, dayExpenses };
+  };
+
+  const renderCalendar = () => {
+    const daysInMonth = getDaysInMonth(currentDate);
+    const firstDay = getFirstDayOfMonth(currentDate);
+    const days = [];
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"];
+
+    // Empty cells for days before month starts
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="h-20 border border-gray-200"></div>);
+    }
+
+    // Days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const { dayIncome, dayExpenses } = getDateEntries(day);
+      const totalDayIncome = dayIncome.reduce((sum, entry) => sum + entry.amount, 0);
+      const totalDayExpenses = dayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+      const hasActivity = dayIncome.length > 0 || dayExpenses.length > 0;
+
+      days.push(
+        <div key={day} className="h-20 border border-gray-200 p-1 bg-white hover:bg-gray-50 transition-colors">
+          <div className="text-sm font-medium text-gray-700 mb-1">{day}</div>
+          {hasActivity && (
+            <div className="space-y-1">
+              {totalDayIncome > 0 && (
+                <div className="text-xs bg-green-100 text-green-800 rounded px-1 py-0.5">
+                  +${totalDayIncome}
+                </div>
+              )}
+              {totalDayExpenses > 0 && (
+                <div className="text-xs bg-red-100 text-red-800 rounded px-1 py-0.5">
+                  -${totalDayExpenses}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold">
+            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+          </h3>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
+              className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
+              className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-7 gap-0 border border-gray-200 rounded-lg overflow-hidden">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+            <div key={day} className="bg-gray-100 p-2 text-center text-sm font-medium text-gray-700 border-r border-gray-200 last:border-r-0">
+              {day}
+            </div>
+          ))}
+          {days}
+        </div>
+
+        <div className="flex gap-4 mt-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-green-100 rounded"></div>
+            <span>Income</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-red-100 rounded"></div>
+            <span>Expenses</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-6 bg-gradient-to-br from-purple-50 to-indigo-50 min-h-screen">
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Creator Finance Tracker</h1>
-        <p className="text-gray-600">Manage irregular income, track deductibles, and plan for taxes</p>
+        <p className="text-gray-600 text-lg">Finally, budgeting that works for micro-influencers</p>
       </div>
 
       {/* Key Metrics Dashboard */}
@@ -127,18 +254,37 @@ const CreatorFinanceTracker = () => {
         </div>
       </div>
 
-      {/* Emergency Fund Progress */}
+      {/* Monthly Buffer Progress */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <h3 className="text-lg font-semibold mb-2">Emergency Fund Progress</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold">Monthly Buffer Progress</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Goal: $</span>
+            <input
+              type="number"
+              value={monthlyBufferGoal}
+              onChange={(e) => setMonthlyBufferGoal(parseFloat(e.target.value) || 0)}
+              className="w-20 text-sm border rounded px-2 py-1"
+              min="0"
+            />
+          </div>
+        </div>
         <div className="w-full bg-gray-200 rounded-full h-4">
           <div 
             className="bg-gradient-to-r from-green-400 to-green-600 h-4 rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(emergencyFundProgress, 100)}%` }}
+            style={{ width: `${Math.min(bufferProgress, 100)}%` }}
           ></div>
         </div>
-        <p className="text-sm text-gray-600 mt-2">
-          ${netProfit.toLocaleString()} of ${emergencyGoal.toLocaleString()} goal ({Math.round(emergencyFundProgress)}%)
-        </p>
+        <div className="flex justify-between items-center mt-2">
+          <p className="text-sm text-gray-600">
+            ${monthlyNetProfit.toLocaleString()} of ${monthlyBufferGoal.toLocaleString()} this month ({Math.round(bufferProgress)}%)
+          </p>
+          {bufferSurplus > 0 && (
+            <p className="text-sm text-green-600 font-medium">
+              Surplus: +${bufferSurplus.toLocaleString()} ✓
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Navigation Tabs */}
@@ -148,6 +294,7 @@ const CreatorFinanceTracker = () => {
             { id: 'income', label: 'Income Tracker', icon: TrendingUp },
             { id: 'expenses', label: 'Expenses & Deductibles', icon: DollarSign },
             { id: 'brands', label: 'Brand Pipeline', icon: Calendar },
+            { id: 'calendar', label: 'Calendar View', icon: CalendarDays },
             { id: 'tax', label: 'Tax Planning', icon: Calculator }
           ].map(tab => (
             <button
@@ -166,11 +313,17 @@ const CreatorFinanceTracker = () => {
         </div>
 
         <div className="p-6">
+          {activeTab === 'calendar' && (
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Calendar View</h3>
+              {renderCalendar()}
+            </div>
+          )}
+
           {activeTab === 'income' && (
             <div>
               <h3 className="text-xl font-semibold mb-4">Income Sources</h3>
               
-              {/* Add Income Form */}
               <div className="bg-gray-50 p-4 rounded-lg mb-4">
                 <h4 className="font-medium mb-3">Add New Income</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -230,7 +383,6 @@ const CreatorFinanceTracker = () => {
                 </div>
               </div>
 
-              {/* Income List */}
               <div className="space-y-3">
                 {incomeEntries.map(entry => (
                   <div key={entry.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
@@ -262,7 +414,6 @@ const CreatorFinanceTracker = () => {
             <div>
               <h3 className="text-xl font-semibold mb-4">Expenses & Tax Deductibles</h3>
               
-              {/* Add Expense Form */}
               <div className="bg-gray-50 p-4 rounded-lg mb-4">
                 <h4 className="font-medium mb-3">Add New Expense</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -318,14 +469,12 @@ const CreatorFinanceTracker = () => {
                 </div>
               </div>
 
-              {/* Tax Deductible Summary */}
               <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
                 <h4 className="font-medium text-yellow-800">Tax Deductible Summary</h4>
                 <p className="text-yellow-700">Total deductible expenses: <span className="font-bold">${deductibleExpenses}</span></p>
                 <p className="text-sm text-yellow-600">This could save you approximately ${(deductibleExpenses * taxRate / 100).toFixed(0)} in taxes</p>
               </div>
 
-              {/* Expenses List */}
               <div className="space-y-3">
                 {expenses.map(expense => (
                   <div key={expense.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
@@ -358,7 +507,6 @@ const CreatorFinanceTracker = () => {
             <div>
               <h3 className="text-xl font-semibold mb-4">Brand Deal Pipeline</h3>
               
-              {/* Add Brand Deal Form */}
               <div className="bg-gray-50 p-4 rounded-lg mb-4">
                 <h4 className="font-medium mb-3">Add New Brand Deal</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -402,7 +550,6 @@ const CreatorFinanceTracker = () => {
                     value={newBrandDeal.dueDate}
                     onChange={(e) => setNewBrandDeal({...newBrandDeal, dueDate: e.target.value})}
                     className="border rounded px-3 py-2"
-                    placeholder="Due date"
                   />
                   <input
                     type="number"
@@ -428,7 +575,6 @@ const CreatorFinanceTracker = () => {
                 </div>
               </div>
 
-              {/* Pipeline Summary */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-yellow-100 p-3 rounded-lg">
                   <h5 className="font-medium text-yellow-800">In Progress</h5>
@@ -450,7 +596,6 @@ const CreatorFinanceTracker = () => {
                 </div>
               </div>
 
-              {/* Brand Deals List */}
               <div className="space-y-3">
                 {brandDeals.map(deal => (
                   <div key={deal.id} className="bg-white border rounded-lg p-4">
@@ -506,7 +651,6 @@ const CreatorFinanceTracker = () => {
               <h3 className="text-xl font-semibold mb-4">Tax Planning & Estimates</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Tax Calculator */}
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h4 className="font-medium mb-3">Tax Calculator</h4>
                   <div className="space-y-3">
@@ -531,7 +675,6 @@ const CreatorFinanceTracker = () => {
                   </div>
                 </div>
 
-                {/* Quarterly Planning */}
                 <div className="bg-purple-50 p-4 rounded-lg">
                   <h4 className="font-medium mb-3">Quarterly Tax Planning</h4>
                   <div className="space-y-2">
@@ -558,7 +701,6 @@ const CreatorFinanceTracker = () => {
                 </div>
               </div>
 
-              {/* Income Smoothing Recommendation */}
               <div className="bg-indigo-50 p-4 rounded-lg mt-4">
                 <h4 className="font-medium mb-2">Income Smoothing Strategy</h4>
                 <p className="text-sm text-indigo-700">
@@ -571,7 +713,6 @@ const CreatorFinanceTracker = () => {
         </div>
       </div>
 
-      {/* Footer */}
       <div className="text-center text-gray-500 text-sm mt-8">
         <p>💡 This tracker helps micro-influencers manage irregular income & maximize tax deductions</p>
       </div>
