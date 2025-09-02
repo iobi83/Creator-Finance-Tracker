@@ -86,36 +86,57 @@ const CreatorFinanceTracker = () => {
   ];
 
   const addIncome = () => {
-    if (newIncome.date && newIncome.source && newIncome.amount) {
-      setIncomeEntries([...incomeEntries, { 
-        ...newIncome, 
-        id: Date.now(), 
-        amount: parseFloat(newIncome.amount) 
-      }]);
-      setNewIncome({ date: '', source: 'TikTok Shop', platform: '', description: '', amount: '', category: 'Affiliate' });
+    const date = newIncome.date?.trim();
+    const source = newIncome.source?.trim();
+    const amount = newIncome.amount?.trim();
+    
+    if (!date || !source || !amount || parseFloat(amount) <= 0) {
+      alert('Please fill in all required fields: Date, Source, and Amount (must be greater than 0)');
+      return;
     }
+    
+    setIncomeEntries([...incomeEntries, { 
+      ...newIncome, 
+      id: Date.now(), 
+      amount: parseFloat(amount) 
+    }]);
+    setNewIncome({ date: '', source: 'TikTok Shop', platform: '', description: '', amount: '', category: 'Affiliate' });
   };
 
   const addExpense = () => {
-    if (newExpense.date && newExpense.description && newExpense.amount) {
-      setExpenses([...expenses, { 
-        ...newExpense, 
-        id: Date.now(), 
-        amount: parseFloat(newExpense.amount) 
-      }]);
-      setNewExpense({ date: '', category: 'Equipment', description: '', amount: '', taxDeductible: true });
+    const date = newExpense.date?.trim();
+    const description = newExpense.description?.trim();
+    const amount = newExpense.amount?.trim();
+    
+    if (!date || !description || !amount || parseFloat(amount) <= 0) {
+      alert('Please fill in all required fields: Date, Description, and Amount (must be greater than 0)');
+      return;
     }
+    
+    setExpenses([...expenses, { 
+      ...newExpense, 
+      id: Date.now(), 
+      amount: parseFloat(amount) 
+    }]);
+    setNewExpense({ date: '', category: 'Equipment', description: '', amount: '', taxDeductible: true });
   };
 
   const addBrandDeal = () => {
-    if (newBrandDeal.brand && newBrandDeal.campaign && newBrandDeal.amount) {
-      setBrandDeals([...brandDeals, { 
-        ...newBrandDeal, 
-        id: Date.now(), 
-        amount: parseFloat(newBrandDeal.amount) 
-      }]);
-      setNewBrandDeal({ brand: '', campaign: '', stage: 'Outreach', dueDate: '', paymentStatus: 'Pending', amount: '', notes: '' });
+    const brand = newBrandDeal.brand?.trim();
+    const campaign = newBrandDeal.campaign?.trim();
+    const amount = newBrandDeal.amount?.trim();
+    
+    if (!brand || !campaign || !amount || parseFloat(amount) <= 0) {
+      alert('Please fill in all required fields: Brand, Campaign, and Amount (must be greater than 0)');
+      return;
     }
+    
+    setBrandDeals([...brandDeals, { 
+      ...newBrandDeal, 
+      id: Date.now(), 
+      amount: parseFloat(amount) 
+    }]);
+    setNewBrandDeal({ brand: '', campaign: '', stage: 'Outreach', dueDate: '', paymentStatus: 'Pending', amount: '', notes: '' });
   };
 
   const deleteIncome = (id) => {
@@ -133,6 +154,41 @@ const CreatorFinanceTracker = () => {
   const updateBrandDealStage = (id, newStage) => {
     setBrandDeals(brandDeals.map(deal => 
       deal.id === id ? { ...deal, stage: newStage } : deal
+    ));
+  };
+
+  const updateBrandDealPayment = (id, newPaymentStatus) => {
+    const deal = brandDeals.find(d => d.id === id);
+    if (!deal) return;
+
+    // If marking as paid, add to income
+    if (newPaymentStatus === 'Paid' && deal.paymentStatus !== 'Paid') {
+      const incomeEntry = {
+        id: Date.now(),
+        date: new Date().toISOString().split('T')[0], // Today's date
+        source: 'Brand Deal',
+        platform: 'Brand Partnership',
+        description: `${deal.brand} - ${deal.campaign}`,
+        amount: deal.amount,
+        category: 'Sponsorship'
+      };
+      
+      setIncomeEntries(prev => [...prev, incomeEntry]);
+    }
+    
+    // If changing from paid to something else, remove from income
+    if (deal.paymentStatus === 'Paid' && newPaymentStatus !== 'Paid') {
+      setIncomeEntries(prev => 
+        prev.filter(income => 
+          !(income.source === 'Brand Deal' && 
+            income.description === `${deal.brand} - ${deal.campaign}` && 
+            income.amount === deal.amount)
+        )
+      );
+    }
+
+    setBrandDeals(brandDeals.map(deal => 
+      deal.id === id ? { ...deal, paymentStatus: newPaymentStatus } : deal
     ));
   };
 
@@ -162,9 +218,24 @@ const CreatorFinanceTracker = () => {
       ));
       setEditingExpenseId(null);
     } else if (type === 'brand') {
-      setBrandDeals(brandDeals.map(item => 
-        item.id === editingBrandId ? {...editData, amount: parseFloat(editData.amount)} : item
-      ));
+      const oldDeal = brandDeals.find(deal => deal.id === editingBrandId);
+      const updatedDeal = {...editData, amount: parseFloat(editData.amount)};
+      
+      // Check if payment status changed
+      if (oldDeal && oldDeal.paymentStatus !== updatedDeal.paymentStatus) {
+        // Handle payment status change with income integration
+        updateBrandDealPayment(editingBrandId, updatedDeal.paymentStatus);
+        
+        // Update other fields
+        setBrandDeals(brandDeals.map(item => 
+          item.id === editingBrandId ? updatedDeal : item
+        ));
+      } else {
+        // No payment status change, just update normally
+        setBrandDeals(brandDeals.map(item => 
+          item.id === editingBrandId ? updatedDeal : item
+        ));
+      }
       setEditingBrandId(null);
     }
     setEditData({});
@@ -376,7 +447,21 @@ const CreatorFinanceTracker = () => {
   const totalPipelineValue = brandDeals.reduce((sum, deal) => sum + deal.amount, 0);
 
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-gradient-to-br from-indigo-50 to-cyan-50 min-h-screen">
+    <div 
+      className="max-w-6xl mx-auto p-6 min-h-screen"
+      style={{
+        background: `
+          radial-gradient(circle at 25% 25%, rgba(67, 56, 202, 0.03) 0%, transparent 50%),
+          radial-gradient(circle at 75% 75%, rgba(6, 182, 212, 0.03) 0%, transparent 50%),
+          linear-gradient(135deg, 
+            rgba(67, 56, 202, 0.02) 0%, 
+            rgba(6, 182, 212, 0.02) 50%, 
+            rgba(217, 119, 6, 0.02) 100%
+          ),
+          #fafbff
+        `
+      }}
+    >
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
