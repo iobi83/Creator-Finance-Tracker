@@ -1,0 +1,61 @@
+import { useEffect } from 'react'
+import { useRouter } from 'next/router'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY // Note: using ANON key for client-side
+)
+
+export default function AuthCallback() {
+  const router = useRouter()
+
+  useEffect(() => {
+    const handleAuthCallback = async () => {
+      // Get the tokens from the URL
+      const { data, error } = await supabase.auth.getSession()
+      
+      if (error) {
+        console.error('Auth error:', error)
+        router.push('/?error=auth_failed')
+        return
+      }
+
+      if (data.session) {
+        // User is authenticated, create profile if needed
+        const { user } = data.session
+        
+        // Check if profile exists, create if not
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert([
+            {
+              id: user.id,
+              email: user.email,
+              plan: 'free' // Default plan
+            }
+          ])
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError)
+        }
+
+        // Redirect to the finance tracker
+        router.push('/app')
+      } else {
+        router.push('/?error=no_session')
+      }
+    }
+
+    handleAuthCallback()
+  }, [router])
+
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold mb-4">Logging you in...</h1>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+      </div>
+    </div>
+  )
+}

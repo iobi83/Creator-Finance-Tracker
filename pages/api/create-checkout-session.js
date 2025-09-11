@@ -1,0 +1,40 @@
+import Stripe from 'stripe';
+import { serverSupabaseFromToken } from '../../lib/supabaseClient';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: process.env.STRIPE_API_VERSION || '2024-06-20' });
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).end('Method Not Allowed');
+
+  try {
+    const token = (req.headers.authorization || '').replace('Bearer ', '');
+    const supabase = serverSupabaseFromToken(token);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { priceId } = req.body || {};
+    if (!priceId) return res.status(400).json({ ok:false, error:'Missing priceId' });
+
+    // Look up the price to decide mode automatically
+    const price = await stripe.prices.retrieve(priceId);
+    const mode = price.recurring ? 'subscription' : 'payment';
+
+    const site = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
+    const session = await stripe.checkout.sessions.create({
+      mode,
+      line_items: [{ price: price.id, quantity: 1 }],
+      success_url: `${site}/success`,
+      cancel_url: `${site}/cancel`,
+      customer_email: user?.email || undefined,
+      metadata: {
+        supabase_user_id: user?.id || '',
+        email: user?.email || ''
+      },
+      allow_promotion_codes: true
+    });
+
+    return res.status(200).json({ url: session.url });
+  } catch (e) {
+    return res.status(500).json({ ok:false, error: e.message });
+  }
+}
