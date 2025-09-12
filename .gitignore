@@ -1,0 +1,30 @@
+.DS_Store
+.vercel
+
+# safety ignores
+.next/
+node_modules/
+.env*
+*.zip
+backups/
+
+# safety ignores
+.next/
+node_modules/
+.env*
+*.zip
+backups/
+
+# safety ignores
+.next/
+node_modules/
+.env*
+*.zip
+backups/
+
+# safety ignores
+.next/
+node_modules/
+.env*
+*.zip
+backups/

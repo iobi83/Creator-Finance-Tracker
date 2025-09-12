@@ -1,0 +1,68 @@
+import { useState } from 'react'
+
+export default function LoginTest() {
+  const [email, setEmail] = useState('')
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setMessage('')
+
+    try {
+      const response = await fetch('/api/auth-test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setMessage('Check your email for the login link!')
+      } else {
+        setMessage(data.error || 'Something went wrong')
+      }
+    } catch (error) {
+      setMessage('Network error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full bg-white p-8 rounded-lg shadow">
+        <h1 className="text-2xl font-bold mb-6 text-center">Login Test</h1>
+        
+        <form onSubmit={handleLogin}>
+          <input
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 border rounded-lg mb-4"
+            required
+          />
+          
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {loading ? 'Sending...' : 'Send Magic Link'}
+          </button>
+        </form>
+
+        {message && (
+          <div className="mt-4 p-3 bg-blue-100 text-blue-800 rounded">
+            {message}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

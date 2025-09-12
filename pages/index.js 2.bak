@@ -1,0 +1,360 @@
+'use client';
+import { startMonthlyCheckout, startLifetimeCheckout } from '../components/landingCheckout';
+
+import React, { useState } from 'react';
+import {
+  ArrowRight,
+  Calendar,
+  CheckCircle2,
+  ClipboardList,
+  DollarSign,
+  FileDown,
+  PieChart,
+  TrendingUp,
+} from 'lucide-react';
+
+// Keep palette consistent with the app UI but overall neutral vibe
+const COLORS = {
+  primary: '#4338CA', // Rich Indigo
+  accent: '#06B6D4',  // Bright Cyan
+  gold: '#D97706',    // Gold accents
+  ink: '#0F172A',     // Slate-900
+  softBg: '#F8FAFC',  // Slate-50
+};
+
+// You can override this once you finalize the brand name
+const BRAND = 'Creator Finance Tracker';
+const TAGLINE = 'Finally, a budgeting app made for micro-influencers';
+
+export default function LandingPage() {
+  const [openFaq, setOpenFaq] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // --- Smooth-scroll helpers to avoid hash-routing / hydration edge cases ---
+  const onNavClick = (id) => (e) => {
+    try {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      const el = document.getElementById(id);
+      if (el && 'scrollIntoView' in el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      console.error('Nav click error:', err);
+    }
+  };
+// --- Stripe Checkout Function ---
+const handleCheckout = async (plan, priceType = 'subscription') => {
+  setIsLoading(true);
+  
+  try {
+    const response = await fetch('/api/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        plan,
+        priceType 
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to create checkout session');
+    }
+    
+    const { url } = await response.json();
+    window.location.href = url;
+    
+  } catch (error) {
+    console.error('Checkout error:', error);
+    alert('Something went wrong. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+  // --- Runtime sanity tests (lightweight) ---
+  const features = [
+    { icon: <TrendingUp className="h-5 w-5"/>, title: 'Income tracking made for creators', text: 'Track TikTok Shop, brand deals, YouTube, trading — all in one place.' },
+    { icon: <ClipboardList className="h-5 w-5"/>, title: 'Brand deal pipeline', text: 'Stay on top of outreach, negotiation, deliverables and payment status.' },
+    { icon: <DollarSign className="h-5 w-5"/>, title: 'Expenses & deductibles', text: 'Flag potential write‑offs with an info helper so you never miss savings.' },
+    { icon: <Calendar className="h-5 w-5"/>, title: 'Clickable calendar view', text: 'Tap a day to see income/expense breakdowns at a glance.' },
+    { icon: <PieChart className="h-5 w-5"/>, title: 'Dashboard insights', text: 'See income, expenses, net profit and tax estimates instantly.' },
+    { icon: <FileDown className="h-5 w-5"/>, title: 'One‑click PDF export', text: 'Choose sections (Income, Expenses, Brands, Tax, etc.) and share with your tax pro.' },
+  ];
+  console.assert(features.length === 6, 'features list should have 6 items');
+  // verify anchors exist
+  setTimeout(() => {
+    try { ['features','pricing','faq','cta'].forEach(id => console.assert(!!document.getElementById(id), `missing #${id} anchor target`)); } catch {}
+  }, 0);
+
+  // --- FAQ data (fixes ReferenceError: faqs is not defined) ---
+  const faqs = [
+    { q: 'Is this built for small creators (under 50k)?', a: 'Yes. The categories, pipeline, and cash‑flow model are tuned for micro‑influencers with irregular income.' },
+    { q: 'Do I need bookkeeping experience to use it?', a: 'No. The interface uses creator‑friendly language and defaults. You can start tracking in minutes.' },
+    { q: 'How is this different from a generic budget app?', a: 'It handles brand deals, TikTok Shop commissions, and tax‑deductible flags — the stuff general apps ignore.' },
+    { q: 'Can I export my data?', a: 'Yes. Export a tailored PDF (pick sections) for your tax preparer or records.' }
+  ];
+  console.assert(Array.isArray(faqs) && faqs.length >= 4, 'faqs should be a non-empty array');
+
+  return (
+    <div className="min-h-screen bg-white text-slate-900">
+      {/* NAV */}
+      <header className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white/90 border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-7 w-7 rounded-lg" style={{ background: COLORS.primary }} />
+            <span className="font-semibold tracking-tight">{BRAND}</span>
+          </div>
+          <nav className="hidden md:flex items-center gap-8 text-sm">
+            <a href="#features" onClick={onNavClick('features')} className="hover:opacity-80">Features</a>
+            <a href="#pricing" onClick={onNavClick('pricing')} className="hover:opacity-80">Pricing</a>
+            <a href="#faq" onClick={onNavClick('faq')} className="hover:opacity-80">FAQ</a>
+            <a href="#cta" onClick={onNavClick('cta')} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-white" style={{ background: COLORS.primary }}>
+              Get the tracker <ArrowRight className="h-4 w-4"/>
+            </a>
+          </nav>
+        </div>
+      </header>
+
+      {/* HERO */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 -z-10" aria-hidden="true">
+          <div className="h-[560px] bg-gradient-to-br from-indigo-50 via-white to-cyan-50" />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 text-xs font-medium px-2.5 py-1 rounded-full mb-4 border" style={{ borderColor: '#E2E8F0', color: COLORS.primary }}>
+                <CheckCircle2 className="h-3.5 w-3.5"/> Built by a creator, for creators
+              </div>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900">
+                {TAGLINE}
+              </h1>
+              <p className="mt-4 text-slate-600 text-base sm:text-lg max-w-prose">
+                Track brand deals, TikTok Shop commissions, trading gains, and expenses without spreadsheets. Designed for real creator cash‑flow and the challenges of irregular income.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <a href="#cta" onClick={onNavClick('cta')} className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-white" style={{ background: COLORS.primary }}>
+                  Start free <ArrowRight className="h-4 w-4"/>
+                </a>
+                <a href="#features" onClick={onNavClick('features')} className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-slate-300">
+                  See how it works
+                </a>
+              </div>
+              <div className="mt-6 text-xs text-slate-500">
+                No bookkeeping experience needed • Export a PDF anytime
+              </div>
+            </div>
+
+            {/* Visual mock (replace with real screenshot later) */}
+            <div className="relative">
+              <div className="rounded-2xl border border-slate-200 shadow-xl overflow-hidden bg-white">
+                <div className="h-10 w-full" style={{ background: COLORS.ink }} />
+                <div className="p-6 grid md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <div className="p-4 rounded-lg border bg-white">
+                      <div className="text-xs text-slate-500">Total Income</div>
+                      <div className="text-2xl font-semibold" style={{ color: COLORS.accent }}>$8,450</div>
+                    </div>
+                    <div className="p-4 rounded-lg border bg-white">
+                      <div className="text-xs text-slate-500">Net Profit</div>
+                      <div className="text-2xl font-semibold" style={{ color: COLORS.primary }}>$4,620</div>
+                    </div>
+                    <div className="p-4 rounded-lg border bg-white">
+                      <div className="text-xs text-slate-500">Est. Tax</div>
+                      <div className="text-2xl font-semibold" style={{ color: COLORS.gold }}>$1,155</div>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="p-4 rounded-lg border bg-white">
+                      <div className="flex items-center justify-between text-xs text-slate-500">
+                        <span>Brand Pipeline</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px]" style={{ background: '#E0E7FF', color: COLORS.primary }}>3 active</span>
+                      </div>
+                      <div className="mt-2 h-24 rounded bg-gradient-to-r from-indigo-100 to-cyan-100" />
+                    </div>
+                    <div className="p-4 rounded-lg border bg-white">
+                      <div className="text-xs text-slate-500">Calendar</div>
+                      <div className="mt-2 grid grid-cols-7 gap-1 text-[10px]">
+                        {Array.from({ length: 28 }).map((_, i) => (
+                          <div key={i} className="aspect-square rounded border border-slate-200 flex items-center justify-center">
+                            {i + 1}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute -bottom-3 -right-3 bg-white/70 backdrop-blur px-3 py-1.5 rounded-md text-xs border shadow-sm">
+                Demo view • Replace with screenshot
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURES */}
+      <section id="features" className="py-14 md:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Everything a micro‑influencer actually needs</h2>
+            <p className="mt-2 text-slate-600">No bloated accounting. Just the tools that map to how creators really earn and spend.</p>
+          </div>
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((f, idx) => (
+              <div key={idx} className="p-5 border rounded-xl bg-white hover:shadow-sm transition-shadow">
+                <div className="h-9 w-9 rounded-lg grid place-items-center mb-3" style={{ background: '#EEF2FF', color: COLORS.primary }}>
+                  {f.icon}
+                </div>
+                <h3 className="font-semibold">{f.title}</h3>
+                <p className="mt-1.5 text-sm text-slate-600">{f.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SOCIAL PROOF / STRIP */}
+      <section className="py-8" style={{ background: COLORS.softBg }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center gap-6 text-slate-500 text-sm">
+          <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4"/> Built on Next.js</span>
+          <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4"/> PDF export ready</span>
+          <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4"/> Deployed on Vercel</span>
+        </div>
+      </section>
+
+      {/* PRICING */}
+      <section id="pricing" className="py-14 md:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Simple pricing</h2>
+            <p className="mt-2 text-slate-600">Start with the Lite template, or unlock the full web app with brand pipeline, calendar, and tax planning.</p>
+          </div>
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Premium Web App */}
+            <div className="p-6 border rounded-2xl">
+              <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs" style={{ background: '#EEF2FF', color: COLORS.primary }}>Most Popular</div>
+              <h3 className="mt-3 text-xl font-semibold">Premium Web App</h3>
+              <p className="text-slate-600 text-sm mt-1">All features: income, expenses, brand deals, calendar, dashboard, PDF export.</p>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="text-3xl font-bold">$9.99</span>
+                <span className="text-sm text-slate-500">/month or $79 once</span>
+              </div>
+              <ul className="mt-4 space-y-2 text-sm">
+                <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4" style={{ color: COLORS.primary }}/> Creator‑specific income categories</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4" style={{ color: COLORS.primary }}/> Brand deal pipeline + statuses</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4" style={{ color: COLORS.primary }}/> Calendar view + daily breakdown</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4" style={{ color: COLORS.primary }}/> Dashboard KPIs & tax estimate</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4" style={{ color: COLORS.primary }}/> Selective PDF export</li>
+              </ul>
+            <div className="mt-6 flex flex-col gap-2">
+  <button 
+    onClick={startMonthlyCheckout}
+    disabled={isLoading}
+    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-white disabled:opacity-50" 
+    style={{ background: COLORS.primary }}
+  >
+    {isLoading ? 'Loading...' : 'Get monthly ($9.99/mo)'} <ArrowRight className="h-4 w-4"/>
+  </button>
+  <button 
+    onClick={startMonthlyCheckout}
+    disabled={isLoading}
+    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+  >
+    {isLoading ? 'Loading...' : 'Buy once ($79)'}
+  </button>
+</div>
+            </div>
+
+            {/* Lite Template */}
+            <div className="p-6 border rounded-2xl">
+              <h3 className="text-xl font-semibold">Lite Template</h3>
+              <p className="text-slate-600 text-sm mt-1">The essentials in Notion or Google Sheets. Great for quick starts or budgets.</p>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="text-3xl font-bold">$24</span>
+                <span className="text-sm text-slate-500">one‑time</span>
+              </div>
+              <ul className="mt-4 space-y-2 text-sm">
+                <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4" style={{ color: COLORS.accent }}/> Income & expense tabs</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4" style={{ color: COLORS.accent }}/> Quick monthly summary</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4" style={{ color: COLORS.accent }}/> PDF/CSV export guidance</li>
+              </ul>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <a href="#cta" onClick={onNavClick('cta')} className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-slate-300">
+                  Get the Notion template
+                </a>
+                <a href="#cta" onClick={onNavClick('cta')} className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-slate-300">
+                  Get the Sheets template
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="py-14 md:py-20" style={{ background: COLORS.softBg }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Frequently asked questions</h2>
+            <p className="mt-2 text-slate-600">A quick primer for creators who want clarity without the accounting headache.</p>
+          </div>
+          <div className="mt-8 divide-y border rounded-xl bg-white">
+            {faqs.map((item, idx) => (
+              <div key={idx} className="p-5">
+                <button
+                  className="w-full flex items-center justify-between text-left"
+                  onClick={() => setOpenFaq(openFaq === idx ? -1 : idx)}
+                >
+                  <span className="font-medium">{item.q}</span>
+                  <span className="text-slate-500 text-sm">{openFaq === idx ? '–' : '+'}</span>
+                </button>
+                {openFaq === idx && (
+                  <p className="mt-2 text-sm text-slate-600">{item.a}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section id="cta" className="py-14 md:py-20 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="rounded-2xl border p-8 md:p-10 bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h3 className="text-2xl font-bold tracking-tight">Ready to track creator money the right way?</h3>
+                <p className="mt-1 text-slate-600">Join now and get the exact system built for micro‑influencers.</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <a href="/app" data-link role="link" className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-white" style={{ background: COLORS.primary }}>
+                  Launch the web app <ArrowRight className="h-4 w-4"/>
+                </a>
+                <a href="#pricing" className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-slate-300">
+                  Compare plans
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="py-10 border-t">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-7 w-7 rounded-lg" style={{ background: COLORS.primary }} />
+            <div>
+              <div className="font-semibold">{BRAND}</div>
+              <div className="text-xs text-slate-500">© {new Date().getFullYear()} — All rights reserved.</div>
+            </div>
+          </div>
+          <div className="text-xs text-slate-500">
+            Not tax, legal, or accounting advice. Consult a qualified professional.
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
