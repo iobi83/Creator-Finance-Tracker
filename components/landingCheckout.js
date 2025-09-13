@@ -18,8 +18,10 @@ export async function startCheckout(priceId) {
 
     const { data: { session } = {} } = await supabase.auth.getSession();
     if (!session?.access_token) {
+      if (w && !w.closed) { try { w.document.write('Redirecting to login…'); } catch {} w.location = '/login'; return; }
+      window.location.href = '/login'; return;
       // not logged in → send to login (your app routes to /app after callback)
-      window.location.href = '/login';
+      return startTrialOrMonthlyPreopen();
       return;
     }
 
@@ -91,7 +93,7 @@ export async function startTrialOrMonthly() {
     const { data: { session } = {} } = await supabase.auth.getSession();
     if (!session?.access_token) {
       // Not logged in → send to login (app will route back after callback)
-      window.location.href = '/login';
+      return startTrialOrMonthlyPreopen();
       return;
     }
 
@@ -121,12 +123,13 @@ export async function startTrialOrMonthlyPreopen() {
 
     // Pre-open a tab synchronously (popup-safe)
     const w = window.open('about:blank', '_blank');
+    if (w) { try { w.document.write('Redirecting to Stripe…'); } catch {} }
 
     const { data: { session } = {} } = await supabase.auth.getSession();
     if (!session?.access_token) {
-      // Not logged in — close the pre-opened tab and go to /login in same tab
-      try { if (w && !w.closed) w.close(); } catch {}
-      window.location.href = '/login';
+      const alt = await fetch('/api/create-checkout-session-guarded', { method: 'POST' });
+      const { url: altUrl } = await alt.json();
+      if (w && altUrl) { w.location = altUrl; return; }
       return;
     }
 
@@ -166,15 +169,15 @@ export async function startLifetimeCheckoutPreopen() {
 
     const { data: { session } = {} } = await supabase.auth.getSession();
     if (!session?.access_token) {
-      try { if (w && !w.closed) w.close(); } catch {}
-      window.location.href = '/login';
+      // Lifetime allows guest checkout — do not force login here
+      return;
       return;
     }
 
     const LIFETIME_PRICE = process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID;
     if (!LIFETIME_PRICE) { alert('Missing NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID'); return; }
 
-    const res = await fetch('/api/create-checkout-session', {
+    const res = await fetch('/api/create-checkout-session-guarded', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -206,8 +209,14 @@ export async function startLifetimeCheckoutPreopenWithHandle(w) {
 
     const { data: { session } = {} } = await supabase.auth.getSession();
     if (!session?.access_token) {
-      try { if (w && !w.closed) w.close(); } catch {}
-      window.location.href = '/login';
+      // Lifetime allows guest checkout — do not force login here
+      const L=process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID;
+      const r=await fetch('/api/create-checkout-session-guarded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({priceId:L})});
+      const j=await r.json().catch(()=>({}));
+      if (w && j?.url){ try{ w.location=j.url; }catch{ window.location.href=j.url; } return; }
+      const r2=await fetch('/api/create-checkout-session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({priceId:L})});
+      const j2=await r2.json().catch(()=>({})); if (w && j2?.url){ try{ w.location=j2.url; }catch{ window.location.href=j2.url; } return; }
+      return;
       return;
     }
 

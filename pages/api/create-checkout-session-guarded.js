@@ -41,12 +41,18 @@ export default async function handler(req, res) {
       }
     }
 
+    // Unauthed subscription: grant trial (brand-new user path)
+    if (mode === 'subscription' && !user?.id) trialEligible = true;
     const trialDays = parseInt(process.env.STRIPE_TRIAL_DAYS || '7', 10);
 
+    const nextPath = '/app/flow';
+    const successUrl = user?.id
+      ? `${site}/success?next=${encodeURIComponent(nextPath)}`
+      : `${site}/login?verify=1&next=${encodeURIComponent(nextPath)}`;
     const sessionParams = {
       mode,
       line_items: [{ price: price.id, quantity: 1 }],
-      success_url: `${site}/success`,
+      success_url: successUrl,
       cancel_url: `${site}/cancel`,
       customer_email: user?.email || undefined,
       metadata: {
@@ -61,10 +67,11 @@ export default async function handler(req, res) {
       sessionParams.subscription_data = { trial_period_days: trialDays };
     }
 
+  console.log('[checkout-guarded]', { mode, authed: !!user?.id, trialEligible, priceId: price?.id || 'unknown' });
     const session = await stripe.checkout.sessions.create(sessionParams);
 
     // Best-effort mark as used if we just granted the trial (webhook can harden later)
-    if (trialEligible) {
+    if (trialEligible && user?.id) {
       try {
         await supabase
           .from('profiles')

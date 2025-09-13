@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 import { browserSupabase } from '../../lib/supabaseClient';
 
 export default function AppHome() {
+  useEffect(()=>{ try{ window.location.replace('/app/flow'); }catch{ window.location.href='/app/flow'; } },[]);
+  useEffect(()=>{ try{ window.location.replace('/app/flow'); }catch{ window.location.href='/app/flow'; } },[]);
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
