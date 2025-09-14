@@ -46,7 +46,9 @@ export default async function handler(req, res) {
     const trialDays = parseInt(process.env.STRIPE_TRIAL_DAYS || '7', 10);
 
     const nextPath = '/app/flow';
-    const successUrl = `${site}/create-account?session_id={CHECKOUT_SESSION_ID}`;
+    const successUrl = user?.id
+      ? `${site}/success?next=${encodeURIComponent(nextPath)}`
+      : `${site}/login?verify=1&next=${encodeURIComponent(nextPath)}`;
     const sessionParams = {
       mode,
       line_items: [{ price: price.id, quantity: 1 }],
@@ -63,7 +65,6 @@ export default async function handler(req, res) {
     // Only for subscriptions and only if not used before
     if (trialEligible) {
       sessionParams.subscription_data = { trial_period_days: trialDays };
-      sessionParams.metadata = { ...(sessionParams.metadata || {}), grant_trial: '1' };
     }
 
   console.log('[checkout-guarded]', { mode, authed: !!user?.id, trialEligible, priceId: price?.id || 'unknown' });

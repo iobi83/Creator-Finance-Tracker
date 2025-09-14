@@ -63,7 +63,6 @@ export default async function handler(req, res) {
     // Only for subscriptions and only if not used before
     if (trialEligible) {
       sessionParams.subscription_data = { trial_period_days: trialDays };
-      sessionParams.metadata = { ...(sessionParams.metadata || {}), grant_trial: '1' };
     }
 
   console.log('[checkout-guarded]', { mode, authed: !!user?.id, trialEligible, priceId: price?.id || 'unknown' });

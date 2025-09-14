@@ -24,7 +24,7 @@ export default function Callback() {
           setMsg('Logged in. Redirecting...'); router.replace('/app/flow'); return;
         }
         const { data: { session } } = await supabase.auth.getSession();
-        if (session){ const { data:{ user } }=await supabase.auth.getUser(); if(user){ await supabase.from('profiles').upsert({ id:user.id, email:user.email }, { onConflict:'id' }); await fetch('/api/promote-entitlement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ email: user.email, user_id: user.id })}); } return router.replace('/app/flow'); }
+        if (session){ const { data:{ user } }=await supabase.auth.getUser(); if(user){ await supabase.from('profiles').upsert({ id:user.id, email:user.email }, { onConflict:'id' }); } return router.replace('/app/flow'); }
         setMsg('Invalid or expired link. Please log in again.');
       } catch (e) {
         setMsg(e.message || 'Auth error.');
