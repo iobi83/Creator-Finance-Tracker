@@ -25,9 +25,6 @@ export default async function handler(req, res) {
   const _key=(process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_KEY||'').trim();
   const _email=(o.customer_details?.email||o.customer_email||o.metadata?.email||'').trim();
   const _uid=(o.metadata?.supabase_user_id||'').trim();
-  const upd=async(b)=>{try{const h={'apikey':_key,'Authorization':`Bearer ${_key}`,'Content-Type':'application/json','Prefer':'return=minimal'};const q=_uid?`?id=eq.${encodeURIComponent(_uid)}`:(_email?`?email=eq.${encodeURIComponent(_email)}`:'');if(!q||!_key||!_url){console.log('[upd:skip]',{hasQ:!!q,hasKey:!!_key,hasUrl:!!_url});return;}const r=await fetch(_url+q,{method:'PATCH',headers:h,body:JSON.stringify(b)});console.log('[upd:res]',{status:r.status});}catch(e){console.log('[upd:err]',e.message)}};
-  if(evt.type==='checkout.session.completed'){if(o.mode==='payment'){await upd({plan:'premium_lifetime'});}else if(o.mode==='subscription' && (o.metadata?.grant_trial==='1')){await upd({plan:'trial',trial_used:true});}}
-  if(evt.type==='invoice.payment_succeeded'){await upd({plan:'premium_monthly'});}
     return res.json({ ok: true });
   } catch (e) {
     console.error('[stripe-webhook] verify failed:', e.message);

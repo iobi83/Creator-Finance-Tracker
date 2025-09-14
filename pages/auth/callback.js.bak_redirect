@@ -18,12 +18,12 @@ export default function Callback() {
         if (type === 'magiclink' && token_hash && email) {
           const { error } = await supabase.auth.verifyOtp({ type: 'magiclink', token_hash, email });
           if (error) throw error;
-          const { data:{ user } } = await supabase.auth.getUser();
-          if (user) { await supabase.from('profiles').upsert({ id: user.id, email: email || user.email }, { onConflict: 'id' }); }
-          setMsg('Logged in. Redirecting...'); router.replace('/app/flow'); return;
+          setMsg('Logged in. Redirecting...');
+          router.replace('/app');
+          return;
         }
         const { data: { session } } = await supabase.auth.getSession();
-        if (session){ const { data:{ user } }=await supabase.auth.getUser(); if(user){ await supabase.from('profiles').upsert({ id:user.id, email:user.email }, { onConflict:'id' }); } return router.replace('/app/flow'); }
+        if (session) return router.replace('/app');
         setMsg('Invalid or expired link. Please log in again.');
       } catch (e) {
         setMsg(e.message || 'Auth error.');

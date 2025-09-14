@@ -1,0 +1,179 @@
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import { browserSupabase } from '../../lib/supabaseClient';
+
+export default function AppHome() {
+  useEffect(()=>{ try{ window.location.replace('/app/flow'); }catch{ window.location.href='/app/flow'; } },[]);
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [income, setIncome] = useState([]);
+  const [plan, setPlan] = useState('free');
+  const [form, setForm] = useState({ source: '', amount: '', date: '' });
+  const [busy, setBusy] = useState(false);
+  const supabase = browserSupabase();
+
+  const fetchPlan = async (uid) => {
+    const { data: prof } = await supabase.from('profiles').select('plan').eq('id', uid).single();
+    if (prof?.plan) setPlan(prof.plan);
+  };
+
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) { router.replace('/login'); return; }
+      setUser(session.user);
+
+      // ensure a profile exists
+      await supabase.from('profiles').upsert(
+        { id: session.user.id, email: session.user.email },
+        { onConflict: 'id' }
+      );
+
+      // load initial data
+      await fetchPlan(session.user.id);
+const { data: inc, error: incErr } = await supabase
+  .from('income')
+  .select('id, source, amount, date, created_at, user_id')
+  .eq('user_id', session.user.id)
+  .order('created_at', { ascending: false });
+if (incErr) { console.error('income fetch error:', incErr); alert('Income fetch error: ' + incErr.message); }
+setIncome(inc || []);
+setLoading(false);
+
+      // if returning from /success, poll briefly to catch webhook update
+      const upgradedFlag = router.asPath.includes('upgraded=1');
+      if (upgradedFlag) {
+        let tries = 0;
+        const interval = setInterval(async () => {
+          await fetchPlan(session.user.id);
+          if (plan === 'premium' || tries++ > 15) clearInterval(interval);
+        }, 2000);
+        return () => clearInterval(interval);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
+
+  const addIncome = async (e) => {
+    e.preventDefault();
+    const payload = {
+      source: form.source.trim(),
+      amount: Number(form.amount || 0),
+      date: form.date || null
+    };
+    if (!payload.source || isNaN(payload.amount)) return;
+const { data: { user } } = await supabase.auth.getUser();
+    const { data, error } = await supabase.from('income').insert({ ...payload, user_id: user.id }).select('*').single();
+    if (!error && data) {
+      setIncome((prev) => [data, ...prev]);
+      setForm({ source: '', amount: '', date: '' });
+    }
+  };
+
+  const startCheckout = async (priceId) => {
+    try {
+      setBusy(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(token ? { authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ priceId })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Checkout error');
+      window.location.href = json.url;
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    router.replace('/login');
+  };
+
+  if (loading) return <main style={{fontFamily:'sans-serif',padding:24}}>Loading…</main>;
+
+  const monthly = process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID || '';
+  const lifetime = process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID || '';
+
+  return (
+    <main style={{fontFamily:'sans-serif'}} className="max-w-3xl mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Welcome {user?.email}</h1>
+          <p className="text-sm text-gray-600">Plan: <b>{plan}</b></p>
+        </div>
+        <button onClick={signOut} className="px-3 py-2 rounded-xl bg-gray-100">Sign out</button>
+      </div>
+
+      {plan !== 'premium' && (
+        <section className="bg-white rounded-2xl p-4 shadow space-y-3">
+          <h2 className="font-semibold">Upgrade to Premium</h2>
+          <div className="flex gap-3">
+            <button
+              disabled={!monthly || busy}
+              onClick={() => startCheckout(monthly)}
+              className="px-4 py-2 rounded-xl bg-black text-white disabled:opacity-50"
+            >
+              Monthly
+            </button>
+            <button
+              disabled={!lifetime || busy}
+              onClick={() => startCheckout(lifetime)}
+              className="px-4 py-2 rounded-xl bg-gray-900 text-white disabled:opacity-50"
+            >
+              Lifetime
+            </button>
+          </div>
+          {(!monthly || !lifetime) && <p className="text-sm text-gray-500">Set NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID and NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID in .env.local.</p>}
+        </section>
+      )}
+
+      {plan === 'premium' && (
+        <section className="bg-white rounded-2xl p-4 shadow">
+          <h2 className="font-semibold mb-2">Premium unlocked 🎉</h2>
+          <p className="text-gray-600 text-sm">Full tracker features are now available.</p>
+        </section>
+      )}
+
+      <section className="bg-white rounded-2xl p-4 shadow">
+        <h2 className="font-semibold mb-3">Quick Add Income</h2>
+        <form onSubmit={addIncome} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <input className="border rounded-xl p-2" placeholder="Source"
+            value={form.source} onChange={e=>setForm(f=>({...f, source:e.target.value}))}/>
+          <input className="border rounded-xl p-2" type="number" step="0.01" placeholder="Amount"
+            value={form.amount} onChange={e=>setForm(f=>({...f, amount:e.target.value}))}/>
+          <div className="flex gap-2">
+            <input className="border rounded-xl p-2 flex-1" type="date"
+              value={form.date} onChange={e=>setForm(f=>({...f, date:e.target.value}))}/>
+            <button className="rounded-xl px-4 py-2 bg-black text-white">Add</button>
+          </div>
+        </form>
+      </section>
+
+      <section className="bg-white rounded-2xl p-4 shadow">
+        <h2 className="font-semibold mb-3">Your Income</h2>
+        <div className="space-y-2">
+          {income.map(row => (
+            <div key={row.id} className="flex items-center justify-between border rounded-xl p-3">
+              <div>
+                <div className="font-medium">{row.source}</div>
+                <div className="text-sm text-gray-500">{row.date || '—'}</div>
+              </div>
+              <div className="font-semibold">${Number(row.amount).toFixed(2)}</div>
+            </div>
+          ))}
+          {!income.length && <p className="text-gray-500">No income yet.</p>}
+        </div>
+      </section>
+    </main>
+  );
+}
