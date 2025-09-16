@@ -16,20 +16,15 @@ export async function startCheckout(priceId) {
       return;
     }
 
-    const { data: { session } = {} } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      if (w && !w.closed) { try { w.document.write('Redirecting to login…'); } catch {} w.location = '/login'; return; }
-      window.location.href = '/login'; return;
-      // not logged in → send to login (your app routes to /app after callback)
-      return startTrialOrMonthlyPreopen();
-      return;
-    }
+const _res = await supabase.auth.getSession();
+const token = _res?.data?.session?.access_token;
+if (!token) { window.location.href = '/login'; return; }
 
     const res = await fetch('/api/create-checkout-session', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ priceId }),
     });
@@ -101,7 +96,7 @@ export async function startTrialOrMonthly() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({}) // priceId read server-side from env
     });
@@ -125,22 +120,22 @@ export async function startTrialOrMonthlyPreopen() {
     const w = window.open('about:blank', '_blank');
     if (w) { try { w.document.write('Redirecting to Stripe…'); } catch {} }
 
-    const { data: { session } = {} } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      const alt = await fetch('/api/create-checkout-session-guarded', { method: 'POST' });
-      const { url: altUrl } = await alt.json();
-      if (w && altUrl) { w.location = altUrl; return; }
-      return;
-    }
-
-    const res = await fetch('/api/create-checkout-session-guarded', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({})
-    });
+const _res = await supabase.auth.getSession();
+const token = _res?.data?.session?.access_token;
+if (!token) {
+  const alt = await fetch('/api/create-checkout-session-guarded', { method: 'POST' });
+  const { url: altUrl } = await alt.json();
+  if (w && altUrl) { w.location = altUrl; return; }
+  return;
+}
+const headers = token
+  ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+  : { 'Content-Type': 'application/json' };
+const res = await fetch('/api/create-checkout-session-guarded', {
+  method: 'POST',
+  headers,
+  body: JSON.stringify({})
+});
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok || !json?.url) throw new Error(json?.error || 'Checkout failed');
@@ -181,7 +176,7 @@ export async function startLifetimeCheckoutPreopen() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ priceId: LIFETIME_PRICE })
     });
@@ -227,7 +222,7 @@ export async function startLifetimeCheckoutPreopenWithHandle(w) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ priceId: LIFETIME_PRICE })
     });
