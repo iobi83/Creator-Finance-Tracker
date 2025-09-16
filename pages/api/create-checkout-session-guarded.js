@@ -67,7 +67,7 @@ export default async function handler(req, res) {
     }
 
   console.log('[checkout-guarded]', { mode, authed: !!user?.id, trialEligible, priceId: price?.id || 'unknown' });
-    const session = await stripe.checkout.sessions.create(sessionParams);
+      if (mode === 'payment') sessionParams.customer_creation = 'always';
 
     // Best-effort mark as used if we just granted the trial (webhook can harden later)
     if (trialEligible && user?.id) {

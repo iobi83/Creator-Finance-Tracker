@@ -30,6 +30,7 @@ export default async function handler(req, res) {
         supabase_user_id: user?.id || '',
         email: user?.email || ''
       },
+      customer_creation: mode === "payment" ? "always" : undefined,
       allow_promotion_codes: true
     });
 
