@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { APP_NAME, APP_TAGLINE } from '../lib/appMeta';
 import { launchSmart, startTrialOrMonthlyPreopen, startLifetimeCheckoutPreopenWithHandle } from '../components/landingCheckout';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowRight,
   Calendar,
@@ -26,13 +26,16 @@ const COLORS = {
 
 // You can override this once you finalize the brand name
 const BRAND = 'Creator Reserve';
-const TAGLINE = 'Finally, a budgeting app made for micro-influencers';
+  const TAGLINE = 'Finally, budgeting built for micro-influencer';
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+    const [showTop, setShowTop] = useState(false);
+    useEffect(()=>{const f=()=>setShowTop(window.scrollY>200);window.addEventListener('scroll',f,{passive:true});f();return()=>window.removeEventListener('scroll',f);},[]);
 
   // --- Smooth-scroll helpers to avoid hash-routing / hydration edge cases ---
+    const scrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
   const onNavClick = (id) => (e) => {
     try {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -108,7 +111,7 @@ const handleCheckout = async (plan, priceType = 'subscription') => {
       {/* NAV */}
       <header className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white/90 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={scrollTop} title="Back to top">
             <div className="h-7 w-7 rounded-lg" style={{ background: COLORS.primary }} />
             <span className="font-semibold tracking-tight text-xl md:text-2xl">{BRAND}</span>
           </div>
@@ -122,6 +125,9 @@ const handleCheckout = async (plan, priceType = 'subscription') => {
           </nav>
         </div>
       </header>
+        {showTop && (
+          <button onClick={scrollTop} className="fixed bottom-6 right-6 z-40 rounded-full p-3 border bg-white shadow-lg hover:bg-slate-50" aria-label="Back to top">↑</button>
+        )}
 
       {/* HERO */}
       <section className="relative overflow-hidden">
