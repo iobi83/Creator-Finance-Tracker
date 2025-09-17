@@ -9,9 +9,8 @@ export default async function handler(req, res) {
   const buf = await new Promise((r)=>{const c=[]; req.on('data',d=>c.push(d)); req.on('end',()=>r(Buffer.concat(c)));});
   try {
     const evt = stripe.webhooks.constructEvent(buf, sig, process.env.STRIPE_WEBHOOK_SECRET || '');
-  if (await seenBefore(event.id)) { console.log("webhook dedupe", event.id); return res.status(200).json({ ok: true, deduped: true }); }
-  await markSeen({ id: event.id, type: event.type, created: event.created });
-  const { seenBefore, markSeen } = await import("../../lib/webhookIdem.js");
+  if (await seenBefore(evt.id)) { console.log("webhook dedupe", event.id); return res.status(200).json({ ok: true, deduped: true }); }
+  await markSeen(evt.id, evt.type, evt.created);
   if (await seenBefore(evt.id)) { console.log("[stripe-webhook:dedupe]", evt.id); return res.json({ ok: true, dedup: true }); }
   await markSeen(evt.id, evt.type, evt.created);
     console.log('[stripe-webhook]', evt.type);
@@ -46,16 +45,15 @@ export default async function handler(req, res) {
   if(evt.type==='checkout.session.completed'){if(o.mode==='payment'){await upd({plan:'premium_lifetime'});}else if(o.mode==='subscription' && (o.metadata?.grant_trial==='1')){await upd({plan:'trial',trial_used:true});}}
   if(evt.type==='invoice.payment_succeeded'){const paid=Number((o&&o.amount_paid)||0);if(paid>0){await upd({plan:'premium_monthly'});}else{console.log('[invoice:skip]',{amount_paid:o?.amount_paid});}}
     if (evt.type === 'customer.subscription.updated') {
-      const status = o.status;
-      const cancelAtPeriodEnd = !!o.cancel_at_period_end;
-      if (status === 'canceled' && !cancelAtPeriodEnd) {
-        await updByCustomer(o.customer || o.customer_id || null, { plan: null });
-      }
+      const status=o.status; const cancelAtPeriodEnd=!!o.cancel_at_period_end; const _cust=o.customer||o.customer_id||null; console.log('[sub.updated]',{status,cancelAtPeriodEnd,customer:_cust});
+      if (status==='canceled' && !cancelAtPeriodEnd && _cust) { await updByCustomer(_cust,{ plan: null }); }
+      if(status==='canceled' && !cancelAtPeriodEnd && !_cust){ console.log('[sub.updated:missing_customer_id]'); }
     }
     if (evt.type === 'customer.subscription.deleted') {
       await updByCustomer(o.customer || o.customer_id || null, { plan: null });
-    }
-    return res.json({ ok: true });
+      const _cust=o.customer||o.customer_id||null; console.log('[sub.deleted]',{customer:_cust}); if(_cust){ await updByCustomer(_cust,{ plan: null }); } else { console.log('[sub.deleted:missing_customer_id]'); }
+      }
+      return res.json({ ok: true });
   } catch (e) {
     console.error('[stripe-webhook] verify failed:', e.message);
     return res.status(400).json({ ok: false });
