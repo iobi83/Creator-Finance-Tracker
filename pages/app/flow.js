@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import CreatorFlow from '../../components/CreatorFlow';
+import { BRAND } from '../../lib/appMeta';
 
 export default function FlowPage() {
   const msg = typeof window!=="undefined" ? new URLSearchParams(window.location.search).get("msg") : null;
@@ -14,6 +15,20 @@ export default function FlowPage() {
       <Head><title>Creator Reserve</title></Head>
       <div className="min-h-screen bg-slate-50">
         <CreatorFlow />
+        <footer className="py-10 border-t">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-7 w-7 rounded-lg bg-indigo-700" />
+              <div>
+                <div className="font-semibold text-lg">{BRAND}</div>
+                <div className="text-xs text-slate-500">© {new Date().getFullYear()} — All rights reserved.</div>
+              </div>
+            </div>
+            <div className="text-xs text-slate-500">
+              Not tax, legal, or accounting advice. Consult a qualified professional.
+            </div>
+          </div>
+        </footer>
       </div>
     </>
   );
