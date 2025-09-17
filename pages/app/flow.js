@@ -11,19 +11,8 @@ export default function FlowPage() {
   useEffect(()=>{(async()=>{try{const {browserSupabase}=await import("../../lib/supabaseClient");const sb=browserSupabase();const {data:{session}={}}=await sb.auth.getSession();if(!session)return;const {data:prof}=await sb.from("profiles").select("plan").eq("id",session.user.id).single();setPlan(prof?.plan||null);}catch{}})();},[]);
   return (
     <>
-      <Head><title>Creator Flow</title></Head>
+      <Head><title>Creator Reserve</title></Head>
       <div className="min-h-screen bg-slate-50">
-        {msg==="buy-once-signed-in" && (
-          <div className="mx-4 my-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-            You’re signed in. Open the app here. Lifetime purchases happen from your Billing page.
-          </div>
-        )}
-        {(plan=="premium_monthly" || plan=="trial") && (
-          <div className="mx-4 my-2">
-            {/* Visible only for monthly subscribers; opens Stripe Customer Portal */}
-            <button onClick={openPortal} className="px-3 py-1.5 rounded-md border text-sm">Manage billing</button>
-          </div>
-        )}
         <CreatorFlow />
       </div>
     </>

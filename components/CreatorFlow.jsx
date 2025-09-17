@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   DollarSign, TrendingUp, Calendar, Calculator, PlusCircle, Trash2,
-  CalendarDays, Download, Edit3, Info, X, BarChart3
+  CalendarDays, Download, Edit3, Info, X, BarChart3, User
 } from 'lucide-react';
 import SupabaseIncomeLoader from './SupabaseIncomeLoader';
 
@@ -193,23 +193,28 @@ export default function CreatorFlow() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-slate-200">
+      <div className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white/90 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-600 to-cyan-500" />
+              <div className="h-7 w-7 rounded-lg" style={{ background: "#4338CA" }} />
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-900 to-cyan-700 bg-clip-text text-transparent tracking-tight">Creator Flow</h1>
-                <p className="text-xs text-slate-500 -mt-1">Finally, budgeting that works for micro-influencers</p>
+                <h1 className="font-semibold tracking-tight text-xl md:text-2xl">Creator Reserve</h1>
+                <p className="text-xs text-slate-500 -mt-1">Finally, budgeting built for micro-influencers</p>
               </div>
             </div>
+            <div className="flex items-center gap-2">
             <button
               onClick={() => setShowPdfModal(true)}
-              className="bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-md"
+              className="bg-[#4338CA] hover:opacity-90 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-md"
             >
               <Download className="h-4 w-4" />
               <span>Export PDF</span>
             </button>
+              <a href="/app/profile" className="ml-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50" aria-label="Profile">
+                <User className="h-5 w-5 text-slate-700" />
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -221,7 +226,7 @@ export default function CreatorFlow() {
           <div className="bg-white rounded-xl shadow-lg">
             <div className="flex border-b border-slate-200 overflow-x-auto">
               {[
-                { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+                { id: 'dashboard', label: 'Dashboard', icon: BarChart3, User },
                 { id: 'income', label: 'Income Sources', icon: TrendingUp },
                 { id: 'expenses', label: 'Expenses & Deductibles', icon: DollarSign },
                 { id: 'brands', label: 'Brand Pipeline', icon: Calendar },
