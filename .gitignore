@@ -32,3 +32,4 @@ backups/
 # deps & build (do not commit)
 node_modules/
 .next/
+/backup/
