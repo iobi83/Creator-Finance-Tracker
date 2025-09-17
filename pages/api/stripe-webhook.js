@@ -1,3 +1,4 @@
+import { seenBefore, markSeen } from '../../lib/webhookIdem'
 import Stripe from 'stripe';
 export const config = { api: { bodyParser: false } };
 
@@ -8,6 +9,8 @@ export default async function handler(req, res) {
   const buf = await new Promise((r)=>{const c=[]; req.on('data',d=>c.push(d)); req.on('end',()=>r(Buffer.concat(c)));});
   try {
     const evt = stripe.webhooks.constructEvent(buf, sig, process.env.STRIPE_WEBHOOK_SECRET || '');
+  if (await seenBefore(event.id)) { console.log("webhook dedupe", event.id); return res.status(200).json({ ok: true, deduped: true }); }
+  await markSeen({ id: event.id, type: event.type, created: event.created });
   const { seenBefore, markSeen } = await import("../../lib/webhookIdem.js");
   if (await seenBefore(evt.id)) { console.log("[stripe-webhook:dedupe]", evt.id); return res.json({ ok: true, dedup: true }); }
   await markSeen(evt.id, evt.type, evt.created);

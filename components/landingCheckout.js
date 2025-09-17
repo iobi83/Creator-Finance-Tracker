@@ -163,6 +163,7 @@ export async function startLifetimeCheckoutPreopen() {
     const w = window.open('about:blank', '_blank');
 
     const { data: { session } = {} } = await supabase.auth.getSession();
+    if (session?.access_token) { window.location.href="/app/flow?msg=buy-once-signed-in"; return; }
     if (!session?.access_token) {
       // Lifetime allows guest checkout — do not force login here
       return;
@@ -213,6 +214,7 @@ export async function startLifetimeCheckoutPreopenWithHandle(w) {
       const j2=await r2.json().catch(()=>({})); if (w && j2?.url){ try{ w.location=j2.url; }catch{ window.location.href=j2.url; } return; }
       return;
       return;
+    if (session?.access_token) { window.location.href="/app/flow?msg=buy-once-signed-in"; return; }
     }
 
     const LIFETIME_PRICE = process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID;
@@ -222,7 +224,7 @@ export async function startLifetimeCheckoutPreopenWithHandle(w) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        Authorization: "Bearer " + (session?.access_token || ""),
       },
       body: JSON.stringify({ priceId: LIFETIME_PRICE })
     });
