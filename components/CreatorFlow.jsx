@@ -197,7 +197,7 @@ export default function CreatorFlow() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <div className="h-7 w-7 rounded-lg" style={{ background: "#4338CA" }} />
+              <div className="h-7 w-7 rounded-lg bg-[#4338CA]" className="h-7 w-7 rounded-lg bg-[#4338CA]" />
               <div>
                 <h1 className="font-semibold tracking-tight text-xl md:text-2xl">Creator Reserve</h1>
                 <p className="text-xs text-slate-500 -mt-1">Finally, budgeting built for micro-influencers</p>
@@ -222,7 +222,7 @@ export default function CreatorFlow() {
       {/* Main app content (hidden in print) */}
       <div className="print:hidden">
         {/* Tabs */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="bg-white rounded-xl shadow-lg">
             <div className="flex border-b border-slate-200 overflow-x-auto">
               {[
