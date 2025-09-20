@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { browserSupabase } from '../lib/supabaseClient';
+import { BRAND } from '../lib/appMeta';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -18,13 +19,17 @@ export default function Login() {
       if (error) throw error;
           window.location.href='/app/flow';
     } catch (err) {
-      setError(err.message || 'Failed to send magic link.');
+      setError(err.message || 'Login failed.');
     }
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6" style={{fontFamily:'sans-serif'}}>
-      <div className="max-w-md w-full bg-white shadow p-6 rounded-2xl">
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-slate-200 p-6 sm:p-8">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="h-7 w-7 rounded-lg bg-[#4338CA]" />
+          <div className="font-semibold text-lg">{BRAND}</div>
+        </div>
         <h1 className="text-2xl font-semibold mb-4">Sign in</h1>
         {sent ? (
           <p>Magic link sent. Check <b>{email}</b> and click the link.</p>
@@ -34,15 +39,15 @@ export default function Login() {
               type="email" required value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full border rounded-xl p-3"
+              className="w-full rounded-xl border border-slate-300 p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <div style={{marginTop:8}}>
               <label>Password<br/>
-                <input type="password" required value={password} onChange={(e)=>setPassword(e.target.value)} placeholder="Password" className="w-full border rounded-xl p-3" />
+                <input type="password" required value={password} onChange={(e)=>setPassword(e.target.value)} placeholder="Password" className="w-full rounded-xl border border-slate-300 p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </label>
             </div>
-            <button className="w-full rounded-xl p-3 bg-black text-white">Send magic link</button>
-            {error && <p style={{color:'#b91c1c'}}>{error}</p>}
+            <button className="w-full rounded-xl p-3 bg-[#4338CA] hover:opacity-90 text-white shadow-md">Log in</button>
+            {error && <p className="text-sm text-red-600">{error}</p>}
           </form>
         )}
       </div>

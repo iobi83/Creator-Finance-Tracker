@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { BRAND } from '../lib/appMeta';
 
 // client supabase (singleton)
 const supabaseClient = dynamic(() => import('../lib/supabaseClient').then(m => m.browserSupabase), { ssr: false });
@@ -29,11 +30,17 @@ export default function CreateAccount({ ok, email, reason, sessionId, siteUrl })
 
   if (!ok) {
     return (
-      <main style={{maxWidth: 640, margin: '3rem auto', padding: '0 1rem', fontFamily:'sans-serif'}}>
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-slate-200 p-6 sm:p-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-7 w-7 rounded-lg bg-[#4338CA]" />
+            <div className="font-semibold text-lg">{BRAND}</div>
+          </div>
         <h2>Create account</h2>
         <p style={{color:'#6b7280'}}>We couldn’t confirm a recent checkout session for this link.</p>
         <p style={{fontSize:12, color:'#9ca3af'}}>Reason: {reason || 'invalid_session'}</p>
         <a href="/" style={{display:'inline-block',marginTop:12,padding:'10px 14px',border:'1px solid #e5e7eb',borderRadius:12,textDecoration:'none'}}>Back to home</a>
+        </div>
       </main>
     );
   }
@@ -71,13 +78,18 @@ export default function CreateAccount({ ok, email, reason, sessionId, siteUrl })
   };
 
   return (
-    <main style={{maxWidth: 640, margin: '3rem auto', padding: '0 1rem', fontFamily:'sans-serif'}}>
-      <h2 style={{margin:'0 0 1rem'}}>Create your account</h2>
-      <form onSubmit={doSignup} style={{border:'1px solid #e5e7eb',borderRadius:16,padding:16}}>
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-slate-200 p-6 sm:p-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-7 w-7 rounded-lg bg-[#4338CA]" />
+            <div className="font-semibold text-lg">{BRAND}</div>
+          </div>
+        <h2 className="text-2xl font-semibold mb-4">Create your account</h2>
+        <form onSubmit={doSignup} className="space-y-4">
         <div style={{marginBottom:12}}>
           <label>Email (used at checkout)
             <input value={email||''} readOnly
-              style={{display:'block',width:'100%',marginTop:6,padding:'10px',border:'1px solid #e5e7eb',borderRadius:12,background:'#f9fafb'}}
+              className="block w-full mt-1 p-3 rounded-xl border border-slate-300 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="you@example.com"
             />
           </label>
@@ -91,11 +103,11 @@ export default function CreateAccount({ ok, email, reason, sessionId, siteUrl })
                 value={pwd}
                 onChange={e=>setPwd(e.target.value)}
                 placeholder="At least 8 characters"
-                style={{display:'block',width:'100%',padding:'10px',border:'1px solid #e5e7eb',borderRadius:12}}
+                className="block w-full p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
               />
               <button type="button" onClick={()=>setShow1(s=>!s)}
-                style={{position:'absolute',right:8,top:8,background:'transparent',border:'none',cursor:'pointer',color:'#2563eb'}}>
+                className="absolute right-2 top-2 text-indigo-600 text-sm">
                 {show1?'Hide':'Show'}
               </button>
             </div>
@@ -110,11 +122,11 @@ export default function CreateAccount({ ok, email, reason, sessionId, siteUrl })
                 value={pwd2}
                 onChange={e=>setPwd2(e.target.value)}
                 placeholder="Re-enter your password"
-                style={{display:'block',width:'100%',padding:'10px',border:'1px solid #e5e7eb',borderRadius:12}}
+                className="block w-full p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
               />
               <button type="button" onClick={()=>setShow2(s=>!s)}
-                style={{position:'absolute',right:8,top:8,background:'transparent',border:'none',cursor:'pointer',color:'#2563eb'}}>
+                className="absolute right-2 top-2 text-indigo-600 text-sm">
                 {show2?'Hide':'Show'}
               </button>
             </div>
@@ -122,19 +134,20 @@ export default function CreateAccount({ ok, email, reason, sessionId, siteUrl })
         </div>
 
         {!valid && (pwd || pwd2) ? (
-          <div style={{color:'#b91c1c', fontSize:13, marginTop:4}}>
+          <div className="mt-1 text-sm text-red-600">
             Passwords must be at least 8 characters and match.
           </div>
         ) : null}
 
         <button disabled={!valid || busy}
-          style={{marginTop:12,padding:'10px 14px',borderRadius:12,background:'#111827',color:'#fff',border:'none',cursor: valid && !busy ? 'pointer':'not-allowed'}}>
+          className="w-full rounded-xl p-3 bg-[#4338CA] hover:opacity-90 text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
           {busy?'Creating…':'Create account'}
         </button>
 
-        {msg ? <div style={{marginTop:10, fontSize:13, color: msg.startsWith('Check') ? '#065f46' : '#b91c1c'}}>{msg}</div> : null}
+        {msg ? <div className={"mt-2 text-sm " + (msg.startsWith('Check') ? 'text-emerald-700' : 'text-red-600')}>{msg}</div> : null}
       </form>
       <p style={{marginTop:10, fontSize:13, color:'#6b7280'}}>Have an account already? <a href="/login">Sign in</a></p>
+      </div>
     </main>
   );
 }
